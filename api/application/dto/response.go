@@ -4,12 +4,13 @@ type Response struct {
 	Data any `json:"data"`
 }
 
-// type ResponsePaginated[T any] struct {
-type ResponsePaginated struct {
-	// Data []interface{} `json:"data"`
-	// Data       []T       `json:"data"`
-	Data       []any     `json:"data"`
+type ResponsePaginated[T any] struct {
+	Data       *[]T      `json:"data"`
 	Pagination Paginated `json:"pagination"`
+}
+
+type ResponseError struct {
+	Message string `json:"message"`
 }
 
 type Paginated struct {

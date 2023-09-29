@@ -16,11 +16,11 @@ func (es *ExampleService) GetMany() (*[]dto.CreateExampleResponseDto, dto.Pagina
 func (es *ExampleService) GetById(id string) *dto.CreateExampleResponseDto {
 	return exampleRepository.GetById(id)
 }
-func (es *ExampleService) Create() *dto.CreateExampleResponseDto {
-	return exampleRepository.Create()
+func (es *ExampleService) Create(e dto.CreateExampleDto) *dto.CreateExampleResponseDto {
+	return exampleRepository.Create(e)
 }
-func (es *ExampleService) Update() *dto.CreateExampleResponseDto {
-	return exampleRepository.Update()
+func (es *ExampleService) Update(e dto.CreateExampleDto) *dto.CreateExampleResponseDto {
+	return exampleRepository.Update(e)
 }
 func (es *ExampleService) DeleteById(id string) bool {
 	return exampleRepository.DeleteById(id)

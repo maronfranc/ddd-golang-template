@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 
 	"github.com/go-chi/chi"
@@ -29,42 +28,51 @@ type exampleHandler struct{}
 
 func (h *exampleHandler) getMany(w http.ResponseWriter, r *http.Request) {
 	es, page := exampleService.GetMany()
-	pgn := &dto.ResponsePaginated{Data: []interface{}{es}, Pagination: page}
-	buf, err := json.Marshal(pgn)
-	if err != nil {
-		log.Println("JSON marshal error")
-		return
-	}
-	w.Write(buf)
-}
+	pgn := &dto.ResponsePaginated[dto.CreateExampleResponseDto]{Data: es, Pagination: page}
+	json.NewEncoder(w).Encode(pgn)
 
+}
 func (h *exampleHandler) getById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	e := exampleService.GetById(id)
 	if e == nil {
-		http.Error(w, "Example not found", http.StatusNotFound)
+		m := dto.ResponseError{Message: "Example not found"}
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(m)
 		return
 	}
 	res := &dto.Response{Data: e}
-	buf, err := json.Marshal(res)
+	json.NewEncoder(w).Encode(res)
+}
+func (h *exampleHandler) create(w http.ResponseWriter, r *http.Request) {
+	var b dto.CreateExampleDto
+	err := json.NewDecoder(r.Body).Decode(&b)
 	if err != nil {
-		http.Error(w, "JSON marshal error", http.StatusInternalServerError)
+		m := dto.ResponseError{Message: "JSON decode error"}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(m)
 		return
 	}
-	w.Write(buf)
+	c := exampleService.Create(b)
+	res := &dto.Response{Data: c}
+	json.NewEncoder(w).Encode(res)
 }
-
-func (h *exampleHandler) create(w http.ResponseWriter, r *http.Request) {
-	log.Println("Handler create by id")
-}
-
 func (h *exampleHandler) update(w http.ResponseWriter, r *http.Request) {
-	log.Println("Handler update by id")
+	var b dto.CreateExampleDto
+	err := json.NewDecoder(r.Body).Decode(&b)
+	if err != nil {
+		m := dto.ResponseError{Message: "JSON decode error"}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(m)
+		return
+	}
+	u := exampleService.Update(b)
+	res := &dto.Response{Data: u}
+	json.NewEncoder(w).Encode(res)
 }
-
 func (h *exampleHandler) deleteById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	b := exampleService.DeleteById(id)
-	log.Println("Handler delete by id")
-	log.Println(b)
+	d := exampleService.DeleteById(id)
+	res := &dto.Response{Data: d}
+	json.NewEncoder(w).Encode(res)
 }

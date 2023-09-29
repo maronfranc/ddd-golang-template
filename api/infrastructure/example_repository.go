@@ -25,10 +25,10 @@ func (er *ExampleRepository) GetMany() (*[]dto.CreateExampleResponseDto, dto.Pag
 func (er *ExampleRepository) GetById(id string) *dto.CreateExampleResponseDto {
 	return mockExample()
 }
-func (er *ExampleRepository) Create() *dto.CreateExampleResponseDto {
+func (er *ExampleRepository) Create(dto.CreateExampleDto) *dto.CreateExampleResponseDto {
 	return mockExample()
 }
-func (er *ExampleRepository) Update() *dto.CreateExampleResponseDto {
+func (er *ExampleRepository) Update(e dto.CreateExampleDto) *dto.CreateExampleResponseDto {
 	return mockExample()
 }
 func (er *ExampleRepository) DeleteById(id string) bool {
