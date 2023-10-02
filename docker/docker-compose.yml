@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  db-postgres:
+    container_name: db-postgres-container
+    networks: [backend]
+    image: postgres:15.3-alpine3.18
+    ports: [5432:5432]
+    volumes:
+      - ./container-data/postgres:/data/postgres
+      - ./docker/sql/:/docker-entrypoint-initdb.d/
+    env_file: [./.postgres.env]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+networks:
+ backend:
+    name: golang-api-network
