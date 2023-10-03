@@ -2,21 +2,28 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi"
 	"github.com/maronfranc/poc-golang-ddd/application/dto"
 	"github.com/maronfranc/poc-golang-ddd/domain/example"
 )
 
-func RouteExample() chi.Router {
+const ROUTE = "/examples"
+const QS_PAGE = "page"
+const QS_LIMIT = "limit"
+const LIMIT = 10
+
+func LoadExampleRoutes() chi.Router {
 	r := chi.NewRouter()
 
 	h := exampleHandler{}
 	r.Get("/", h.getMany)
 	r.Get("/{id}", h.getById)
 	r.Post("/", h.create)
-	r.Patch("/", h.update)
+	r.Patch("/{id}", h.update)
 	r.Delete("/{id}", h.deleteById)
 
 	return r
@@ -27,10 +34,13 @@ var exampleService = &example.ExampleService{}
 type exampleHandler struct{}
 
 func (h *exampleHandler) getMany(w http.ResponseWriter, r *http.Request) {
-	es, page := exampleService.GetMany()
-	pgn := &dto.ResponsePaginated[dto.CreateExampleResponseDto]{Data: es, Pagination: page}
+	page := getQueryInt(r, QS_PAGE, 1)
+	limit := getQueryInt(r, QS_LIMIT, 10)
+	es, total := exampleService.GetMany(page, limit)
+	pgn := &dto.ResponsePaginated[dto.ManyExampleResponseDto]{
+		Data:       es,
+		Pagination: buildPagination(ROUTE, total, page, limit)}
 	json.NewEncoder(w).Encode(pgn)
-
 }
 func (h *exampleHandler) getById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
@@ -41,7 +51,7 @@ func (h *exampleHandler) getById(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(m)
 		return
 	}
-	res := &dto.Response{Data: e}
+	res := &dto.Response[dto.CreateExampleResponseDto]{Data: *e}
 	json.NewEncoder(w).Encode(res)
 }
 func (h *exampleHandler) create(w http.ResponseWriter, r *http.Request) {
@@ -53,8 +63,14 @@ func (h *exampleHandler) create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(m)
 		return
 	}
-	c := exampleService.Create(b)
-	res := &dto.Response{Data: c}
+	c, err := exampleService.Create(&b)
+	if err != nil {
+		m := dto.ResponseError{Message: "Internal server error"}
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(m)
+		return
+	}
+	res := &dto.Response[dto.CreateExampleResponseDto]{Data: *c}
 	json.NewEncoder(w).Encode(res)
 }
 func (h *exampleHandler) update(w http.ResponseWriter, r *http.Request) {
@@ -66,13 +82,48 @@ func (h *exampleHandler) update(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(m)
 		return
 	}
-	u := exampleService.Update(b)
-	res := &dto.Response{Data: u}
+	id := chi.URLParam(r, "id")
+	err = exampleService.UpdateById(id, &b)
+	res := &dto.Response[bool]{Data: err == nil}
 	json.NewEncoder(w).Encode(res)
 }
 func (h *exampleHandler) deleteById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	d := exampleService.DeleteById(id)
-	res := &dto.Response{Data: d}
+	err := exampleService.DeleteById(id)
+	res := &dto.Response[bool]{Data: err == nil}
 	json.NewEncoder(w).Encode(res)
+}
+
+func getQueryInt(r *http.Request, n string, defaultV int) int {
+	qv := r.URL.Query().Get(n)
+	if qv == "" {
+		return defaultV
+	}
+	v, err := strconv.Atoi(qv)
+	if err != nil {
+		v = defaultV
+	}
+	return v
+}
+
+func buildPagination(route string, total, page, limit int) *dto.Paginated {
+	// SEE: https://stackoverflow.com/a/17974
+	// SEE: https://stackoverflow.com/questions/17944/how-to-round-up-the-result-of-integer-division/17974
+	totalPage := (total + limit - 1) / limit
+	prevPage := page - 1
+	nextPage := page + 1
+	if prevPage < 0 {
+		prevPage = 0
+	}
+	if nextPage > totalPage {
+		nextPage = totalPage
+	}
+	prevLink := fmt.Sprintf("%s?page=%d&limit=%d", route, prevPage, limit)
+	nextLink := fmt.Sprintf("%s?page=%d&limit=%d", route, nextPage, limit)
+	return &dto.Paginated{
+		TotalRecord: total,
+		TotalPage:   int(totalPage),
+		PrevLink:    prevLink,
+		NextLink:    nextLink,
+	}
 }

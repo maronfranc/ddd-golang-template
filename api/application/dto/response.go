@@ -1,12 +1,12 @@
 package dto
 
-type Response struct {
-	Data any `json:"data"`
+type Response[T any] struct {
+	Data T `json:"data"`
 }
 
 type ResponsePaginated[T any] struct {
-	Data       *[]T      `json:"data"`
-	Pagination Paginated `json:"pagination"`
+	Data       *[]T       `json:"data"`
+	Pagination *Paginated `json:"pagination"`
 }
 
 type ResponseError struct {
@@ -14,11 +14,10 @@ type ResponseError struct {
 }
 
 type Paginated struct {
-	TotalRecords int `json:"total_records"`
-	TotalPages   int `json:"total_pages"`
-	CurrentPage  int `json:"current_page"`
-	NextPage     int `json:"next_page"`
-	PrevPage     int `json:"prev_page"`
+	TotalRecord int    `json:"total_record"`
+	TotalPage   int    `json:"total_page"`
+	NextLink    string `json:"next_page"`
+	PrevLink    string `json:"prev_page"`
 	// sort_by
 	// sort_order 'asc' 'desc'
 }

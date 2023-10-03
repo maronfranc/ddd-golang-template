@@ -10,3 +10,8 @@ type CreateExampleResponseDto struct {
 	Title       string `json:"title,omitempty" bson:"title,omitempty"`
 	Description string `json:"description,omitempty" bson:"description,omitempty"`
 }
+
+type ManyExampleResponseDto struct {
+	Id    string `json:"id" bson:"id"`
+	Title string `json:"title" bson:"title"`
+}
