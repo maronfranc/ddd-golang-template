@@ -2,6 +2,7 @@ package infrastructure
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -11,14 +12,17 @@ import (
 
 var DbConn *sqlx.DB
 
-// func Connect(user, password, dbhost, dbport, dbname string) error {
-func Connect(connectionString string) error {
+func ConnectDb(connectionString string) error {
 	conn, err := sqlx.Open("postgres", connectionString)
 	if err != nil {
 		return err
 	}
 	DbConn = conn
 	return nil
+}
+func CloseDb() {
+	log.Print("Closing infrastructure connection")
+	DbConn.Close()
 }
 
 func InsertReturningId(
@@ -84,6 +88,19 @@ func SelectById[T any](table, id string, fields []string) *T {
 	DbConn.Get(&o, stmt, id)
 	return &o
 }
+
+// func SelectByIdJoin[T any](table, id string, fields []string, tableToJoin string) *T {
+// 	var o T
+// 	selStr := strings.Join(fields, ",")
+// 	stmt := fmt.Sprintf(
+// 		"SELECT %s FROM %s t1"+
+// 			"INNER JOIN %s t2 ON t1.id = t2." +
+// 			" WHERE id=$1 LIMIT 1",
+// 		selStr, table, tableToJoin)
+// 	// stmt += "WHERE id=$1 LIMIT 1"
+// 	DbConn.Get(&o, stmt, id)
+// 	return &o
+// }
 
 func connectionString(user, password, dbhost, dbport, dbname string) string {
 	// "postgres://user:password@dbhost:dbport/my_db"

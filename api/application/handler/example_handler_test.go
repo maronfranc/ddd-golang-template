@@ -22,7 +22,7 @@ var testId string
 
 func TestExampleCRUD(t *testing.T) {
 	connStr := infrastructure.GetConnValues()
-	infrastructure.Connect(connStr)
+	infrastructure.ConnectDb(connStr)
 	rt := newTestServer()
 
 	t.Run("POST '/': should create a new example", func(t *testing.T) {

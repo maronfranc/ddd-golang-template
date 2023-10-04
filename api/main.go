@@ -11,7 +11,7 @@ import (
 
 func main() {
 	connStr := infrastructure.GetConnValues()
-	err := infrastructure.Connect(connStr)
+	err := infrastructure.ConnectDb(connStr)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Connection failed: %v\n", err)
 		panic(err)
@@ -20,4 +20,5 @@ func main() {
 	const PORT = 3000
 	app := &application.Application{}
 	app.ListenAndServe(PORT)
+	infrastructure.CloseDb()
 }
