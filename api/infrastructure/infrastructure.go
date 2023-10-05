@@ -63,7 +63,6 @@ func SelectNow() string {
 	return timePing
 }
 
-// func SelectPagination[T any](table string, s T, page, perPage int) ([]T, int) {
 func SelectPagination[T any](table string, fields []string, page, perPage int) ([]T, int) {
 	fieldStr := strings.Join(fields, ",")
 	offset := (page - 1) * perPage
@@ -79,43 +78,14 @@ func SelectPagination[T any](table string, fields []string, page, perPage int) (
 	return vs, total
 }
 
-func SelectById[T any](table, id string, fields []string) *T {
+func SelectById[T any](table, id string, fields []string) (*T, error) {
 	var o T
 	selStr := strings.Join(fields, ",")
 	stmt := fmt.Sprintf(
 		"SELECT %s FROM %s WHERE id=$1 LIMIT 1",
 		selStr, table)
-	DbConn.Get(&o, stmt, id)
-	return &o
-}
-
-// func SelectByIdJoin[T any](table, id string, fields []string, tableToJoin string) *T {
-// 	var o T
-// 	selStr := strings.Join(fields, ",")
-// 	stmt := fmt.Sprintf(
-// 		"SELECT %s FROM %s t1"+
-// 			"INNER JOIN %s t2 ON t1.id = t2." +
-// 			" WHERE id=$1 LIMIT 1",
-// 		selStr, table, tableToJoin)
-// 	// stmt += "WHERE id=$1 LIMIT 1"
-// 	DbConn.Get(&o, stmt, id)
-// 	return &o
-// }
-
-func connectionString(user, password, dbhost, dbport, dbname string) string {
-	// "postgres://user:password@dbhost:dbport/my_db"
-	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		user, password, dbhost, dbport, dbname)
-}
-
-func GetConnValues() string {
-	const dbhost = "localhost"
-	const dbport = "5432"
-	const user = "my_user"
-	const password = "pass123"
-	const dbname = "my_db"
-	return connectionString(user, password, dbhost, dbport, dbname)
+	err := DbConn.Get(&o, stmt, id)
+	return &o, err
 }
 
 // getStructPlaceholder (key1,key2,key3) (?,?,?) and (value1,value2,value3)
@@ -158,6 +128,22 @@ func getUpdatePlaceholder(s any) (string, []any, int) {
 		lastIndex = i + 1
 	}
 	return keyValueStr, values, lastIndex
+}
+
+func connectionString(user, password, dbhost, dbport, dbname string) string {
+	// "postgres://user:password@dbhost:dbport/my_db"
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		user, password, dbhost, dbport, dbname)
+}
+
+func GetConnValues() string {
+	const dbhost = "localhost"
+	const dbport = "5432"
+	const user = "my_user"
+	const password = "pass123"
+	const dbname = "my_db"
+	return connectionString(user, password, dbhost, dbport, dbname)
 }
 
 // getStructKeys (key1,key2,keyN)

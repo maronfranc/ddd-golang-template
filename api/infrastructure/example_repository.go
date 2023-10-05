@@ -13,7 +13,7 @@ func (er *ExampleRepository) GetMany(page, limit int) (*[]dto.ManyExampleRespons
 		TABLE_NAME, []string{"id", "title"}, page, limit)
 	return &r, total
 }
-func (er *ExampleRepository) GetById(id string) *dto.CreateExampleResponseDto {
+func (er *ExampleRepository) GetById(id string) (*dto.CreateExampleResponseDto, error) {
 	return SelectById[dto.CreateExampleResponseDto](
 		TABLE_NAME, id, []string{"id", "title", "description"})
 }

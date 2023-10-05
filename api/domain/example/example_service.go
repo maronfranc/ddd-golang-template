@@ -12,7 +12,7 @@ type ExampleService struct{}
 func (es *ExampleService) GetMany(page, limit int) (*[]dto.ManyExampleResponseDto, int) {
 	return exampleRepository.GetMany(page, limit)
 }
-func (es *ExampleService) GetById(id string) *dto.CreateExampleResponseDto {
+func (es *ExampleService) GetById(id string) (*dto.CreateExampleResponseDto, error) {
 	return exampleRepository.GetById(id)
 }
 func (es *ExampleService) Create(e *dto.CreateExampleDto) (*dto.CreateExampleResponseDto, error) {

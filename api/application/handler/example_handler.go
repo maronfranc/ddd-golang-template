@@ -1,7 +1,9 @@
 package handler
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -35,7 +37,7 @@ type exampleHandler struct{}
 
 func (h *exampleHandler) getMany(w http.ResponseWriter, r *http.Request) {
 	page := getQueryInt(r, QS_PAGE, 1)
-	limit := getQueryInt(r, QS_LIMIT, 10)
+	limit := getQueryInt(r, QS_LIMIT, LIMIT)
 	es, total := exampleService.GetMany(page, limit)
 	pgn := &dto.ResponsePaginated[dto.ManyExampleResponseDto]{
 		Data:       es,
@@ -44,11 +46,13 @@ func (h *exampleHandler) getMany(w http.ResponseWriter, r *http.Request) {
 }
 func (h *exampleHandler) getById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
-	e := exampleService.GetById(id)
-	if e == nil {
-		m := dto.ResponseError{Message: "Example not found"}
-		w.WriteHeader(http.StatusNotFound)
-		json.NewEncoder(w).Encode(m)
+	e, err := exampleService.GetById(id)
+	if errors.Is(err, sql.ErrNoRows) {
+		encodeResponseError(w, "Example not found", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		encodeResponseError(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	res := &dto.Response[dto.CreateExampleResponseDto]{Data: *e}
@@ -58,16 +62,12 @@ func (h *exampleHandler) create(w http.ResponseWriter, r *http.Request) {
 	var b dto.CreateExampleDto
 	err := json.NewDecoder(r.Body).Decode(&b)
 	if err != nil {
-		m := dto.ResponseError{Message: "JSON decode error"}
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(m)
+		encodeResponseError(w, "JSON decode error", http.StatusInternalServerError)
 		return
 	}
 	c, err := exampleService.Create(&b)
 	if err != nil {
-		m := dto.ResponseError{Message: "Internal server error"}
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(m)
+		encodeResponseError(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 	res := &dto.Response[dto.CreateExampleResponseDto]{Data: *c}
@@ -77,9 +77,7 @@ func (h *exampleHandler) update(w http.ResponseWriter, r *http.Request) {
 	var b dto.CreateExampleDto
 	err := json.NewDecoder(r.Body).Decode(&b)
 	if err != nil {
-		m := dto.ResponseError{Message: "JSON decode error"}
-		w.WriteHeader(http.StatusInternalServerError)
-		json.NewEncoder(w).Encode(m)
+		encodeResponseError(w, "JSON decode error", http.StatusInternalServerError)
 		return
 	}
 	id := chi.URLParam(r, "id")
@@ -94,8 +92,8 @@ func (h *exampleHandler) deleteById(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func getQueryInt(r *http.Request, n string, defaultV int) int {
-	qv := r.URL.Query().Get(n)
+func getQueryInt(r *http.Request, name string, defaultV int) int {
+	qv := r.URL.Query().Get(name)
 	if qv == "" {
 		return defaultV
 	}
@@ -125,4 +123,10 @@ func buildPagination(route string, total, page, limit int) *dto.Paginated {
 		PrevLink:    prevLink,
 		NextLink:    nextLink,
 	}
+}
+
+func encodeResponseError(w http.ResponseWriter, msg string, code int) {
+	m := dto.ResponseError{Message: msg}
+	w.WriteHeader(code)
+	json.NewEncoder(w).Encode(m)
 }
