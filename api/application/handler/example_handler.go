@@ -109,20 +109,19 @@ func getQueryInt(r *http.Request, n string, defaultV int) int {
 func buildPagination(route string, total, page, limit int) *dto.Paginated {
 	// SEE: https://stackoverflow.com/a/17974
 	// SEE: https://stackoverflow.com/questions/17944/how-to-round-up-the-result-of-integer-division/17974
-	totalPage := (total + limit - 1) / limit
+	totalPage := int((total + limit - 1) / limit)
 	prevPage := page - 1
 	nextPage := page + 1
-	if prevPage < 0 {
-		prevPage = 0
+	var prevLink, nextLink string
+	if prevPage > 1 {
+		prevLink = fmt.Sprintf("%s?page=%d&limit=%d", route, prevPage, limit)
 	}
-	if nextPage > totalPage {
-		nextPage = totalPage
+	if nextPage < totalPage {
+		nextLink = fmt.Sprintf("%s?page=%d&limit=%d", route, nextPage, limit)
 	}
-	prevLink := fmt.Sprintf("%s?page=%d&limit=%d", route, prevPage, limit)
-	nextLink := fmt.Sprintf("%s?page=%d&limit=%d", route, nextPage, limit)
 	return &dto.Paginated{
 		TotalRecord: total,
-		TotalPage:   int(totalPage),
+		TotalPage:   totalPage,
 		PrevLink:    prevLink,
 		NextLink:    nextLink,
 	}

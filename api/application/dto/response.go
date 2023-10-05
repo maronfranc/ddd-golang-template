@@ -16,8 +16,6 @@ type ResponseError struct {
 type Paginated struct {
 	TotalRecord int    `json:"total_record"`
 	TotalPage   int    `json:"total_page"`
-	NextLink    string `json:"next_page"`
-	PrevLink    string `json:"prev_page"`
-	// sort_by
-	// sort_order 'asc' 'desc'
+	NextLink    string `json:"link_next,omitempty"`
+	PrevLink    string `json:"link_prev,omitempty"`
 }
