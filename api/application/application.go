@@ -16,21 +16,31 @@ import (
 	"github.com/go-chi/chi/middleware"
 	"github.com/maronfranc/poc-golang-ddd/application/dto"
 	"github.com/maronfranc/poc-golang-ddd/application/handler"
+	"github.com/maronfranc/poc-golang-ddd/infrastructure"
 )
 
 type Application struct{}
 
-func (a *Application) ListenAndServe(port int) {
-	r := chi.NewRouter()
-	a.LoadMiddlewares(r, true)
-	a.LoadRoutes(r)
+func (a *Application) ListenAndServe() error {
+	r := a.Setup()
+	port, err := infrastructure.EnvGet("API_PORT")
+	if err != nil {
+		return err
+	}
 	a.listenAndServe(r, port)
+	return nil
 }
-func (a *Application) listenAndServe(r *chi.Mux, port int) {
-	p := fmt.Sprintf(":%d", port)
+func (a *Application) Setup() *chi.Mux {
+	r := chi.NewRouter()
+	a.LoadMiddlewares(r)
+	a.LoadRoutes(r)
+	return r
+}
+func (a *Application) listenAndServe(r *chi.Mux, port string) {
+	p := fmt.Sprintf(":%s", port)
 	srv := &http.Server{Addr: p, Handler: r}
 	go func() {
-		log.Printf("Listening on port: %d", port)
+		log.Printf("Listening on port: %s", port)
 		err := srv.ListenAndServe()
 		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Fatalf("HTTP server error: %v", err)
@@ -49,7 +59,8 @@ func (a *Application) listenAndServe(r *chi.Mux, port int) {
 	}
 	log.Println("Server graceful shutdown complete.")
 }
-func (a *Application) LoadMiddlewares(router chi.Router, log bool) {
+func (a *Application) LoadMiddlewares(router chi.Router) {
+	log, _ := infrastructure.EnvGetAsBool("LOG")
 	if log {
 		router.Use(middleware.RequestID)
 		router.Use(middleware.RealIP)

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -21,8 +22,12 @@ const ENDPOINT = "/examples"
 var testId string
 
 func TestExampleCRUD(t *testing.T) {
-	connStr := infrastructure.GetConnValues()
-	infrastructure.ConnectDb(connStr)
+	envfile := infrastructure.EnvGetFile()
+	rootPathFile := fmt.Sprintf("../../%s", envfile)
+	err := infrastructure.Start(rootPathFile)
+	if err != nil {
+		log.Fatalf("Test setup error: %s", err)
+	}
 	rt := newTestServer()
 
 	t.Run("POST '/': should create a new example", func(t *testing.T) {
@@ -121,9 +126,7 @@ func request(
 }
 
 func newTestServer() *chi.Mux {
-	rt := chi.NewRouter()
 	app := &application.Application{}
-	app.LoadMiddlewares(rt, false)
-	app.LoadRoutes(rt)
+	rt := app.Setup()
 	return rt
 }

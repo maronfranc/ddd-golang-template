@@ -28,7 +28,6 @@ func (er *ExampleRepository) Create(e *dto.CreateExampleDto) (*dto.CreateExample
 		Description: e.Description,
 	}
 	return r, nil
-
 }
 func (er *ExampleRepository) UpdateById(id string, e *dto.CreateExampleDto) error {
 	err := UpdateById(TABLE_NAME, id, e)

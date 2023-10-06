@@ -1,33 +1,42 @@
 package infrastructure
 
 import (
+	"errors"
+	"flag"
 	"fmt"
 	"log"
+	"os"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 var DbConn *sqlx.DB
 
-func ConnectDb(connectionString string) error {
-	conn, err := sqlx.Open("postgres", connectionString)
+func Start(envfile string) error {
+	EnvLoad(envfile)
+	connStr, err := EnvGet("PG_CONNECTION_STR")
 	if err != nil {
 		return err
 	}
-	DbConn = conn
+	connectDb(connStr)
 	return nil
+}
+func connectDb(connectionString string) error {
+	conn, err := sqlx.Open("postgres", connectionString)
+	DbConn = conn
+	return err
 }
 func CloseDb() {
 	log.Print("Closing infrastructure connection")
 	DbConn.Close()
 }
 
-func InsertReturningId(
-	table string, s interface{},
-) (string, error) {
+func InsertReturningId(table string, s interface{}) (string, error) {
 	keyStr, valuePlaceholder, values := getStructPlaceholder(s)
 	stmt := fmt.Sprintf(
 		"INSERT INTO %s(%s) VALUES(%s) RETURNING id",
@@ -39,10 +48,9 @@ func InsertReturningId(
 	err := DbConn.Get(&id, stmt, values...)
 	return id, err
 }
-
-// UpdateById UPDATE table SET key1 = ? WHERE id = ?;
 func UpdateById(table, id string, s any) error {
 	setPlaceholder, values, lastIndex := getUpdatePlaceholder(s)
+	// UpdateById UPDATE table SET key1 = ? WHERE id = ?;
 	stmt := fmt.Sprintf(
 		"UPDATE %s SET %s WHERE id=$%d",
 		table, setPlaceholder, lastIndex+1)
@@ -50,19 +58,11 @@ func UpdateById(table, id string, s any) error {
 	_, err := DbConn.Query(stmt, values...)
 	return err
 }
-
 func DeleteById(table, id string) error {
 	stmt := fmt.Sprintf("DELETE FROM %s WHERE id=$1", table)
 	_, err := DbConn.Query(stmt, id)
 	return err
 }
-
-func SelectNow() string {
-	var timePing string
-	DbConn.Get(&timePing, "SELECT now()::varchar")
-	return timePing
-}
-
 func SelectPagination[T any](table string, fields []string, page, perPage int) ([]T, int) {
 	fieldStr := strings.Join(fields, ",")
 	offset := (page - 1) * perPage
@@ -77,7 +77,6 @@ func SelectPagination[T any](table string, fields []string, page, perPage int) (
 	DbConn.Get(&total, pgStmt)
 	return vs, total
 }
-
 func SelectById[T any](table, id string, fields []string) (*T, error) {
 	var o T
 	selStr := strings.Join(fields, ",")
@@ -108,13 +107,10 @@ func getStructPlaceholder(s any) (string, string, []any) {
 	}
 	return keyValueStr, placeholder, values
 }
-
-// getUpdatePlaceholder (key1=?,key2=?,key3=?) []any
 func getUpdatePlaceholder(s any) (string, []any, int) {
 	var keyValueStr string
 	var values []any
 	var lastIndex int
-	// UpdateById UPDATE table SET key1=? WHERE id=?;
 	elem := reflect.ValueOf(s).Elem()
 	for i := 0; i < elem.NumField(); i++ {
 		key := strings.ToLower(elem.Type().Field(i).Name)
@@ -127,71 +123,33 @@ func getUpdatePlaceholder(s any) (string, []any, int) {
 		values = append(values, value)
 		lastIndex = i + 1
 	}
+	// getUpdatePlaceholder (key1=?,key2=?,key3=?) []any
 	return keyValueStr, values, lastIndex
 }
 
-func connectionString(user, password, dbhost, dbport, dbname string) string {
-	// "postgres://user:password@dbhost:dbport/my_db"
-	return fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		user, password, dbhost, dbport, dbname)
+func EnvGetFile() string {
+	n := flag.String("env", "test", "-env flags: ['test','dev','prod']")
+	flag.Parse()
+	fileName := fmt.Sprintf(".%s.env", *n)
+	return fileName
+}
+func EnvLoad(name string) error {
+	return godotenv.Load(name)
+}
+func EnvGet(k string) (string, error) {
+	value, exists := os.LookupEnv(k)
+	if !exists {
+		msg := fmt.Sprintf("Key(%s) not in environment", k)
+		return "", errors.New(msg)
+	}
+	return value, nil
 }
 
-func GetConnValues() string {
-	const dbhost = "localhost"
-	const dbport = "5432"
-	const user = "my_user"
-	const password = "pass123"
-	const dbname = "my_db"
-	return connectionString(user, password, dbhost, dbport, dbname)
+func EnvGetAsBool(k string) (bool, error) {
+	vStr, err := EnvGet(k)
+	if err != nil {
+		return false, err
+	}
+	vBool, err := strconv.ParseBool(vStr)
+	return vBool, err
 }
-
-// getStructKeys (key1,key2,keyN)
-// func getStructKeys(s any) string {
-// 	var keyValueStr string
-// 	elem := reflect.ValueOf(s).Elem()
-// 	for i := 0; i < elem.NumField(); i++ {
-// 		key := strings.ToLower(elem.Type().Field(i).Name)
-// 		if i == 0 {
-// 			keyValueStr = key
-// 		} else {
-// 			keyValueStr += fmt.Sprintf(",%s", key)
-// 		}
-// 	}
-// 	return keyValueStr
-// }
-
-// // getStructFieldNames (key1,key2) and (:key1,:key2)
-// func getStructFieldNames(s interface{}) (string, string) {
-// 	var fStr, commaStr string
-// 	elem := reflect.ValueOf(s).Elem()
-// 	for i := 0; i < elem.NumField(); i++ {
-// 		key := strings.ToLower(elem.Type().Field(i).Name)
-// 		if i == 0 {
-// 			fStr = key
-// 			commaStr = fmt.Sprintf(":%s", key)
-// 		} else {
-// 			fStr += fmt.Sprintf(",%s", key)
-// 			commaStr += fmt.Sprintf(",:%s", key)
-// 		}
-// 	}
-// 	return fStr, commaStr
-// }
-
-// // getStructKeyValue key1=:key1,key2=:key2
-// func getStructKeyValue(s any) (string, []any) {
-// 	var keyValueStr string
-// 	var values []any
-// 	elem := reflect.ValueOf(s).Elem()
-// 	for i := 0; i < elem.NumField(); i++ {
-// 		key := strings.ToLower(elem.Type().Field(i).Name)
-// 		value := elem.Field(i).Interface()
-// 		if i == 0 {
-// 			keyValueStr = fmt.Sprintf("%s=:%s", key, key)
-// 		} else {
-// 			keyValueStr += fmt.Sprintf(",%s=:%s", key, key)
-// 		}
-// 		values = append(values, value)
-// 	}
-// 	return keyValueStr, values
-// }

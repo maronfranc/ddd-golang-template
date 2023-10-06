@@ -10,15 +10,19 @@ import (
 )
 
 func main() {
-	connStr := infrastructure.GetConnValues()
-	err := infrastructure.ConnectDb(connStr)
+	envfile := infrastructure.EnvGetFile()
+	err := infrastructure.Start(envfile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Connection failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Infrastructure start failed: %v\n", err)
 		panic(err)
 	}
 
-	const PORT = 3000
 	app := &application.Application{}
-	app.ListenAndServe(PORT)
+	err = app.ListenAndServe()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Application listen failed: %v\n", err)
+		panic(err)
+	}
+
 	infrastructure.CloseDb()
 }
