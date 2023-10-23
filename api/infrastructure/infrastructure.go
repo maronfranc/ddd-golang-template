@@ -134,6 +134,7 @@ func EnvGetFile() string {
 	return fileName
 }
 func EnvLoad(name string) error {
+	// TODO: https://github.com/joho/godotenv/issues/126#issuecomment-1474645022
 	return godotenv.Load(name)
 }
 func EnvGet(k string) (string, error) {
