@@ -50,7 +50,7 @@ func InsertReturningId(table string, s interface{}) (string, error) {
 }
 func UpdateById(table, id string, s any) error {
 	setPlaceholder, values, lastIndex := getUpdatePlaceholder(s)
-	// UpdateById UPDATE table SET key1 = ? WHERE id = ?;
+	// UpdateById UPDATE table SET key1 = $1 WHERE id = $2;
 	stmt := fmt.Sprintf(
 		"UPDATE %s SET %s WHERE id=$%d",
 		table, setPlaceholder, lastIndex+1)
