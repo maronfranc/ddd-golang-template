@@ -1,6 +1,6 @@
 START TRANSACTION;
 
-INSERT INTO migrations (file) VALUES ('002.create-table-example.sql');
+INSERT INTO pg_migrations (file_id) VALUES ('00001');
 
 CREATE TABLE IF NOT EXISTS examples (
 	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
