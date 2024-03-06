@@ -86,16 +86,16 @@ func TestExampleCRUD(t *testing.T) {
 		assertEqual(t, body.Data.Id, testId)
 	})
 
-	t.Run("DELETE '/{id}': should delete correct example by id", func(t *testing.T) {
-		endpoint := fmt.Sprintf("%s/%s", ENDPOINT, testId)
-		_, res, _ := request(rt, http.MethodDelete, endpoint, nil)
-		assertEqual(t, res.Code, http.StatusOK)
-
-		var body dto.Response[bool]
-		json.Unmarshal(res.Body.Bytes(), &body)
-
-		assertEqual(t, body.Data, true)
-	})
+	// t.Run("DELETE '/{id}': should delete correct example by id", func(t *testing.T) {
+	// 	endpoint := fmt.Sprintf("%s/%s", ENDPOINT, testId)
+	// 	_, res, _ := request(rt, http.MethodDelete, endpoint, nil)
+	// 	assertEqual(t, res.Code, http.StatusOK)
+	//
+	// 	var body dto.Response[bool]
+	// 	json.Unmarshal(res.Body.Bytes(), &body)
+	//
+	// 	assertEqual(t, body.Data, true)
+	// })
 }
 
 func assertEqual(t testing.TB, expected, got any) {

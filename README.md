@@ -6,7 +6,6 @@ cd api
 go run main.go -env dev
 ```
 
-## Request tests
 ### Create example
 ```sh
 DEV_API_HOST=http://localhost:3000

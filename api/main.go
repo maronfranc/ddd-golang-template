@@ -6,7 +6,6 @@ import (
 
 	"github.com/maronfranc/poc-golang-ddd/application"
 	"github.com/maronfranc/poc-golang-ddd/infrastructure"
-	// _ "github.com/jackc/pgx/v5"
 )
 
 func main() {
