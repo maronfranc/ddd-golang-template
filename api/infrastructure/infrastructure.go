@@ -87,7 +87,7 @@ func SelectById[T any](table, id string, fields []string) (*T, error) {
 	return &o, err
 }
 
-// getStructPlaceholder (key1,key2,key3) (?,?,?) and (value1,value2,value3)
+// getStructPlaceholder (key1,key2,key3) ($1,$2,$3) and (value1,value2,value3)
 func getStructPlaceholder(s any) (string, string, []any) {
 	var keyValueStr string
 	var placeholder string

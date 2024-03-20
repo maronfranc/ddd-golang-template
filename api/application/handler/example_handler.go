@@ -126,7 +126,7 @@ func buildPagination(route string, total, page, limit int) *dto.Paginated {
 }
 
 func encodeResponseError(w http.ResponseWriter, msg string, code int) {
-	m := dto.ResponseError{Message: msg}
+	m := dto.ResponseMessage{Message: msg}
 	w.WriteHeader(code)
 	json.NewEncoder(w).Encode(m)
 }

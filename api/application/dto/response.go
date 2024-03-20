@@ -9,7 +9,7 @@ type ResponsePaginated[T any] struct {
 	Pagination *Paginated `json:"pagination"`
 }
 
-type ResponseError struct {
+type ResponseMessage struct {
 	Message string `json:"message"`
 }
 
