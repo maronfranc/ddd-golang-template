@@ -17,6 +17,7 @@ import (
 
 	"github.com/maronfranc/poc-golang-ddd/application/dto"
 	"github.com/maronfranc/poc-golang-ddd/application/handler"
+	"github.com/maronfranc/poc-golang-ddd/application/websocket"
 	"github.com/maronfranc/poc-golang-ddd/infrastructure"
 )
 
@@ -80,6 +81,7 @@ func (a *Application) LoadMiddlewares(r chi.Router) {
 
 func (a *Application) LoadRoutes(r chi.Router) {
 	r.Mount("/examples", handler.LoadExampleRoutes())
+	r.Mount("/ws", websocket.LoadHelloWebsocket())
 	r.NotFound(a.notFound)
 }
 
