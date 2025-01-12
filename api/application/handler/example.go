@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi"
-	"github.com/maronfranc/poc-golang-ddd/application/dto"
+	"github.com/maronfranc/poc-golang-ddd/domain/dto"
 	"github.com/maronfranc/poc-golang-ddd/domain/example"
 )
 
@@ -31,7 +31,7 @@ func LoadExampleRoutes() chi.Router {
 	return r
 }
 
-var exampleService = &example.ExampleService{}
+var exampleService = &example.Service{}
 
 type exampleHandler struct{}
 

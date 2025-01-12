@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-  "github.com/maronfranc/poc-golang-ddd/infrastructure"
+	"github.com/maronfranc/poc-golang-ddd/infrastructure"
 )
 
 const migration_table_name = "pg_migrations"
@@ -38,9 +38,9 @@ func run_migration() error {
 	for _, entry := range dir_entries {
 		file_id := strings.Split(entry.Name(), ".")[0]
 
-    log.Printf("[LOG] file_id:%s",file_id)
-    log.Printf("[LOG] recent_file_id:%s",recent_file_id)
-    
+		log.Printf("[LOG] file_id:%s", file_id)
+		log.Printf("[LOG] recent_file_id:%s", recent_file_id)
+
 		is_already_migrated := file_id <= recent_file_id
 		if is_already_migrated {
 			continue
@@ -54,7 +54,7 @@ func run_migration() error {
 
 		sql_file_content := string(buf)
 		_, err = infrastructure.DbConn.Query(sql_file_content)
-    
+
 		if err != nil {
 			infrastructure.DbConn.Query("ROLLBACK")
 			return err
@@ -69,7 +69,7 @@ func run_migration() error {
 
 func main() {
 	err := run_migration()
-  if err != nil {
-	  log.Printf("%v", err)
-  }
+	if err != nil {
+		log.Printf("%v", err)
+	}
 }

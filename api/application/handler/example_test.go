@@ -13,11 +13,11 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/maronfranc/poc-golang-ddd/application"
-	"github.com/maronfranc/poc-golang-ddd/application/dto"
+	"github.com/maronfranc/poc-golang-ddd/domain/dto"
 	"github.com/maronfranc/poc-golang-ddd/infrastructure"
 )
 
-const ENDPOINT = "/examples"
+const endpoint = "/examples"
 
 var testId string
 
@@ -36,7 +36,7 @@ func TestExampleCRUD(t *testing.T) {
 			Description: "Test description: create"}
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(d)
-		_, res, _ := request(rt, http.MethodPost, ENDPOINT, b)
+		_, res, _ := request(rt, http.MethodPost, endpoint, b)
 		var body dto.Response[dto.CreateExampleResponseDto]
 		json.Unmarshal(res.Body.Bytes(), &body)
 		assertEqual(t, body.Data.Description, d.Description)
@@ -50,7 +50,7 @@ func TestExampleCRUD(t *testing.T) {
 		json.NewEncoder(b).Encode(dto.CreateExampleDto{
 			Title:       "Update test title",
 			Description: "Update test description"})
-		endpoint := fmt.Sprintf("%s/%s", ENDPOINT, testId)
+		endpoint := fmt.Sprintf("%s/%s", endpoint, testId)
 		_, res, _ := request(rt, http.MethodPatch, endpoint, b)
 		assertEqual(t, res.Code, http.StatusOK)
 
@@ -63,7 +63,7 @@ func TestExampleCRUD(t *testing.T) {
 	})
 
 	t.Run("GET '/': should return paginated data", func(t *testing.T) {
-		_, res, _ := request(rt, http.MethodGet, ENDPOINT, nil)
+		_, res, _ := request(rt, http.MethodGet, endpoint, nil)
 		assertEqual(t, res.Code, http.StatusOK)
 
 		var body dto.ResponsePaginated[dto.ManyExampleResponseDto]
@@ -76,7 +76,7 @@ func TestExampleCRUD(t *testing.T) {
 	})
 
 	t.Run("GET '/{id}': should return expected data by id", func(t *testing.T) {
-		endpoint := fmt.Sprintf("%s/%s", ENDPOINT, testId)
+		endpoint := fmt.Sprintf("%s/%s", endpoint, testId)
 		_, res, _ := request(rt, http.MethodGet, endpoint, nil)
 		assertEqual(t, res.Code, http.StatusOK)
 

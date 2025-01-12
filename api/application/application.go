@@ -15,9 +15,9 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 
-	"github.com/maronfranc/poc-golang-ddd/application/dto"
 	"github.com/maronfranc/poc-golang-ddd/application/handler"
 	"github.com/maronfranc/poc-golang-ddd/application/websocket"
+	"github.com/maronfranc/poc-golang-ddd/domain/dto"
 	"github.com/maronfranc/poc-golang-ddd/infrastructure"
 )
 

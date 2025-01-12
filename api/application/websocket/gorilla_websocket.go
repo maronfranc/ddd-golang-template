@@ -2,14 +2,13 @@ package websocket
 
 import (
 	"fmt"
+	"log"
+	"net/http"
 	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/gorilla/websocket"
-	"github.com/maronfranc/poc-golang-ddd/application/dto"
-
-	"log"
-	"net/http"
+	"github.com/maronfranc/poc-golang-ddd/domain/dto"
 )
 
 var upgrader = websocket.Upgrader{
