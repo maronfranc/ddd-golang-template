@@ -17,7 +17,13 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+# Binary
+bin
 # Go workspace file
 go.work
 
+# Environment files
 */**/.prod.env
+
+# Directory used in docker container
+container-data

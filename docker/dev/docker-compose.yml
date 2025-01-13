@@ -4,7 +4,7 @@ services:
   db-postgres:
     container_name: db-postgres-container
     networks: [backend]
-    image: postgres:15.3-alpine3.18
+    image: postgres:16.3-alpine3.20
     ports: [5432:5432]
     volumes:
       - ./container-data/postgres:/data/postgres

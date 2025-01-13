@@ -10,6 +10,7 @@ import (
 	"github.com/maronfranc/poc-golang-ddd/infrastructure"
 )
 
+// TODO: add "embed.FS" package
 const migration_table_name = "pg_migrations"
 const migration_sql_folder = "./migration-script/sql"
 
