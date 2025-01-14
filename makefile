@@ -2,21 +2,25 @@
 .PHONY: test
 test:
 	@cd ./api && \
-	go test -v ./... && \
+	go test -env=test -v ./... && \
 	cd ..
 
 ##### ##### Database ##### #####
-.PHONY: migration
+.PHONY: db-build-migration
 build-migration:
-	@go build -o ./bin/go-example-migration ./api/infrastructure/migration-script/migrate.go
-.PHONY: run-migration
+	@cd ./api && \
+	go build -o ../bin/go-example-migration ./infrastructure/migration-script/migrate.go && \
+	cd ..
+.PHONY: db-run-migration
 run-migration: build-migration
-	@./bin/go-example-migration -env=development
-
-##### ##### Development ##### #####
+	@cd ./api && \
+	./bin/go-example-migration -env=development && \
+	cd ..
 .PHONY: docker-run-dev
 docker-run-dev:
 	@docker-compose -f ./docker/dev/docker-compose.yml up -d
+
+##### ##### Development ##### #####
 .PHONY: build-dev
 build-dev:
 	@cd ./api && \

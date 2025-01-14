@@ -23,12 +23,8 @@ import (
 
 type Application struct{}
 
-func (a *Application) ListenAndServe() error {
+func (a *Application) ListenAndServe(port string) error {
 	r := a.Setup()
-	port, err := infrastructure.EnvGet("API_PORT")
-	if err != nil {
-		return err
-	}
 	a.listenAndServe(r, port)
 	return nil
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/maronfranc/poc-golang-ddd/application"
 	"github.com/maronfranc/poc-golang-ddd/domain/dto"
 	"github.com/maronfranc/poc-golang-ddd/infrastructure"
+	"github.com/maronfranc/poc-golang-ddd/infrastructure/database"
 )
 
 const endpoint = "/examples"
@@ -22,9 +23,17 @@ const endpoint = "/examples"
 var testId string
 
 func TestExampleCRUD(t *testing.T) {
-	envfile := infrastructure.EnvGetFile()
+	envfile, err := infrastructure.EnvGetFileName()
+	if err != nil {
+		panic(err)
+	}
+	err = infrastructure.EnvLoad(envfile)
+	if err != nil {
+		panic(err)
+	}
+
 	rootPathFile := fmt.Sprintf("../../%s", envfile)
-	err := infrastructure.Start(rootPathFile)
+	err = database.Start(rootPathFile)
 	if err != nil {
 		log.Fatalf("Test setup error: %s", err)
 	}
@@ -105,6 +114,7 @@ func assertEqual(t testing.TB, expected, got any) {
 	}
 	t.Errorf("expected: %s, got: %s", got, expected)
 }
+
 func assertStringNotEmpty(t testing.TB, label, v string) {
 	t.Helper()
 	if v != "" {

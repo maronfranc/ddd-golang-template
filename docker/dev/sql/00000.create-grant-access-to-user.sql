@@ -4,8 +4,8 @@
 -- GRANT ALL PRIVILEGES ON DATABASE _db TO _user;
 DO $$
 DECLARE
-	_db TEXT := 'db_123';
-	_user TEXT := 'user_123';
+	_db TEXT := 'db123';
+	_user TEXT := 'user123';
 	_password TEXT := 'pass123';
 BEGIN
 

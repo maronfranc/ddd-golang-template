@@ -44,6 +44,7 @@ func (h *exampleHandler) getMany(w http.ResponseWriter, r *http.Request) {
 		Pagination: buildPagination(ROUTE, total, page, limit)}
 	json.NewEncoder(w).Encode(pgn)
 }
+
 func (h *exampleHandler) getById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	e, err := exampleService.GetById(id)
@@ -58,6 +59,7 @@ func (h *exampleHandler) getById(w http.ResponseWriter, r *http.Request) {
 	res := &dto.Response[dto.CreateExampleResponseDto]{Data: *e}
 	json.NewEncoder(w).Encode(res)
 }
+
 func (h *exampleHandler) create(w http.ResponseWriter, r *http.Request) {
 	var b dto.CreateExampleDto
 	err := json.NewDecoder(r.Body).Decode(&b)
@@ -73,6 +75,7 @@ func (h *exampleHandler) create(w http.ResponseWriter, r *http.Request) {
 	res := &dto.Response[dto.CreateExampleResponseDto]{Data: *c}
 	json.NewEncoder(w).Encode(res)
 }
+
 func (h *exampleHandler) update(w http.ResponseWriter, r *http.Request) {
 	var b dto.CreateExampleDto
 	err := json.NewDecoder(r.Body).Decode(&b)
@@ -85,6 +88,7 @@ func (h *exampleHandler) update(w http.ResponseWriter, r *http.Request) {
 	res := &dto.Response[bool]{Data: err == nil}
 	json.NewEncoder(w).Encode(res)
 }
+
 func (h *exampleHandler) deleteById(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	err := exampleService.DeleteById(id)

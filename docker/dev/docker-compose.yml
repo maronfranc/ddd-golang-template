@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 services:
   db-postgres:
@@ -8,7 +8,7 @@ services:
     ports: [5432:5432]
     volumes:
       - ./container-data/postgres:/data/postgres
-      - ./docker/sql/:/docker-entrypoint-initdb.d/
+      - ./sql/:/docker-entrypoint-initdb.d/
     env_file: [./.postgres.env]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -18,5 +18,5 @@ services:
       start_period: 5s
 
 networks:
- backend:
+  backend:
     name: golang-api-network
