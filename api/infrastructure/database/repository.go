@@ -11,6 +11,7 @@ import (
 
 func InsertReturningId(table string, entity any) (string, error) {
 	stmt, values := PrepareInsertReturningId(table, entity)
+
 	var id string
 	err := DbConn.Get(&id, stmt, values...)
 	return id, err
@@ -35,12 +36,25 @@ func Insert(table string, entity any) error {
 //   - entity: object with key and field to be inserted in the database.
 //   - dbNullKeys: list of key names with column name to be set to NULL.
 func UpdateById(table string, id string, entity any, dbNullKeys []string) error {
+	// lastIndex is the placeholder `$N` number.
 	setPlaceholder, values, lastIndex := prepareUpdateQuery(entity, dbNullKeys)
-	// UpdateById UPDATE table SET key1 = $1 WHERE id = $2;
 	stmt := fmt.Sprintf(
 		"UPDATE %s SET %s WHERE id=$%d",
 		table, setPlaceholder, lastIndex+1)
 	values = append(values, id)
+
+	_, err := DbConn.Query(stmt, values...)
+	return err
+}
+
+func UpdateWhere(table string, entity any, wvs []WhereValue, dbNullKeys []string) error {
+	// lastIndex is the placeholder `$N` number.
+	setPlaceholder, values, lastIndex := prepareUpdateQuery(entity, dbNullKeys)
+	whereStrFields, whereValues := prepareWhereQuery(wvs, lastIndex)
+	stmt := fmt.Sprintf(
+		"UPDATE %s SET %s WHERE %s",
+		table, setPlaceholder, whereStrFields)
+	values = append(values, whereValues...)
 
 	_, err := DbConn.Query(stmt, values...)
 	return err
@@ -65,23 +79,61 @@ func prepareInsertQuery(entity any) (string, string, []any) {
 	// values `[]interface{1, true, "AnyValue"}`
 	var values []any
 
-	// SEE: https://stackoverflow.com/a/14162161
-	elem := reflect.New(reflect.TypeOf(entity)).Elem()
-
-	for i := 0; i < elem.NumField(); i++ {
-		// db_key is in the dto.StructName{ Field `db:"key_name"` }
-		db_key := elem.Type().Field(i).Tag.Get("db")
-		value := reflect.ValueOf(entity).Field(i).Interface()
-
-		if i == 0 {
-			dbKeyStr = db_key
-			placeholder = fmt.Sprintf("$%d", i+1)
-		} else {
-			dbKeyStr += fmt.Sprintf(",%s", db_key)
-			placeholder += fmt.Sprintf(",$%d", i+1)
+	// Handle pointer input
+	entityValue := reflect.ValueOf(entity)
+	if entityValue.Kind() == reflect.Pointer {
+		entityValue = entityValue.Elem()
+		if !entityValue.IsValid() {
+			return "", "", nil
 		}
-		values = append(values, value)
 	}
+
+	entityType := entityValue.Type()
+
+	// Iterate over struct fields.
+	for i := 0; i < entityValue.NumField(); i++ {
+		field := entityType.Field(i)
+		dbTag := field.Tag.Get("db")
+
+		// Skip if no or empty `db` tag.
+		if dbTag == "" {
+			continue
+		}
+
+		// Process the `db` tag to get the actual field name.
+		dbFieldName := strings.Split(dbTag, ",")[0]
+		if dbFieldName == "" {
+			continue
+		}
+
+		// Get the actual field value.
+		fieldValue := entityValue.Field(i)
+
+		// Skip fields that are nil pointers.
+		if fieldValue.Kind() == reflect.Pointer && fieldValue.IsNil() {
+			continue
+		}
+
+		if dbKeyStr != "" {
+			dbKeyStr += ","
+		}
+		dbKeyStr += dbFieldName
+
+		values = append(values, fieldValue.Interface())
+	}
+
+	// Build placeholder string
+	placeholderCount := len(values)
+	if placeholderCount > 0 {
+		placeholders := make([]string, placeholderCount)
+		for i := range placeholderCount {
+			placeholders[i] = fmt.Sprintf("$%d", i+1)
+		}
+		placeholder = strings.Join(placeholders, ",")
+	}
+
+	// Remove leading comma.
+	dbKeyStr = strings.TrimPrefix(dbKeyStr, ",")
 
 	return dbKeyStr, placeholder, values
 }
@@ -92,12 +144,24 @@ func prepareUpdateQuery(entity any, dbNullKeys []string) (string, []any, int) {
 	// values `[]interface{1, true, "AnyValue"}`
 	var values []any
 
-	elem := reflect.New(reflect.TypeOf(entity)).Elem()
+	// Handle both struct and pointer to struct
+	elem := reflect.ValueOf(entity)
+	if elem.Kind() == reflect.Pointer {
+		if elem.IsNil() {
+			panic("entity cannot be nil pointer")
+		}
+		elem = elem.Elem()
+	}
+
+	// Ensure we're working with a struct
+	if elem.Kind() != reflect.Struct {
+		panic("entity must be a struct or pointer to struct")
+	}
 
 	lastIndex := 0
 	for i := 0; i < elem.NumField(); i++ {
 		keyField := elem.Type().Field(i)
-		valueField := reflect.ValueOf(entity).Field(i)
+		valueField := elem.Field(i)
 
 		value := valueField.Interface()
 		// dbKey is in the dto.StructName{Field `db:"key_name"`}.
@@ -107,7 +171,7 @@ func prepareUpdateQuery(entity any, dbNullKeys []string) (string, []any, int) {
 
 		development.Assert(dbKey != "", "Dto with key field error. Add `db:\"column_name\"`")
 
-		isPrtNil := valueField.Kind() == reflect.Ptr && valueField.IsNil()
+		isPrtNil := valueField.Kind() == reflect.Pointer && valueField.IsNil()
 		// isEmpty is what define omit the values with nil.
 		isEmpty := isPrtNil && strings.Contains(jsonKey, "omitempty")
 		if isEmpty {
@@ -142,14 +206,24 @@ type WhereValue struct {
 	Value any
 }
 
-func prepareWhereQuery(wvs []WhereValue) (string, []any) {
+// prepareWhereQuery creates a WHERE clause query string and corresponding values.
+//
+// Parameters:
+//   - wvs: slice of WhereValue containing field names and their corresponding values
+//   - lastIndex: last query placeholder($2) index to start next at ($lastIndex+1).
+// Example:
+//	- Input: []WhereValue{{Field: "name", Value: "John"}, {Field: "age", Value: 30}}`
+//	- Output: ("name=$1,age=$2", []any{"John", 30})
+func prepareWhereQuery(wvs []WhereValue, lastIndex int) (string, []any) {
 	var values []any
 	var strs []string
-	for i, where := range wvs {
+	paramIndex := lastIndex + 1
+	for _, where := range wvs {
 		development.Assert(where.Field != "", "Please provide the repository table column")
-		q := fmt.Sprintf("%s=$%d", where.Field, i+1)
+		q := fmt.Sprintf("%s=$%d", where.Field, paramIndex)
 		strs = append(strs, q)
 		values = append(values, where.Value)
+		paramIndex++
 	}
 
 	query := strings.Join(strs, ",")
@@ -210,7 +284,7 @@ func prepareSelectWhere(table string, fields []string, wvs []WhereValue) (string
 
 	var values []any
 	if len(wvs) > 0 {
-		whereQ, vs := prepareWhereQuery(wvs)
+		whereQ, vs := prepareWhereQuery(wvs, 0)
 		stmt += fmt.Sprintf(" WHERE %s", whereQ)
 		values = vs
 	}
@@ -272,7 +346,7 @@ func getStructTags[T any](tagName string) []string {
 	var tags []string
 
 	// Get the reflection value of the struct type (not an instance)
-	var t = reflect.TypeOf((*T)(nil)).Elem()
+	var t = reflect.TypeFor[T]()
 	if t.Kind() != reflect.Struct {
 		return nil
 	}

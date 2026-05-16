@@ -16,6 +16,7 @@ import (
 	"github.com/maronfranc/poc-golang-ddd/domain/dto"
 	"github.com/maronfranc/poc-golang-ddd/infrastructure"
 	"github.com/maronfranc/poc-golang-ddd/infrastructure/database"
+	"github.com/maronfranc/poc-golang-ddd/infrastructure/model"
 )
 
 const endpoint = "/examples"
@@ -40,13 +41,15 @@ func TestExampleCRUD(t *testing.T) {
 	rt := newTestServer()
 
 	t.Run("POST '/': should create a new example", func(t *testing.T) {
-		d := dto.CreateExampleDto{
+		d := model.CreateExampleDto{
 			Title:       "Test title: create",
 			Description: "Test description: create"}
 		b := new(bytes.Buffer)
 		json.NewEncoder(b).Encode(d)
+
 		_, res, _ := request(rt, http.MethodPost, endpoint, b)
-		var body dto.Response[dto.CreateExampleResponseDto]
+		var body dto.Response[model.Example]
+
 		json.Unmarshal(res.Body.Bytes(), &body)
 		assertEqual(t, body.Data.Description, d.Description)
 
@@ -56,14 +59,14 @@ func TestExampleCRUD(t *testing.T) {
 
 	t.Run("PATCH '/': should update example", func(t *testing.T) {
 		b := new(bytes.Buffer)
-		json.NewEncoder(b).Encode(dto.CreateExampleDto{
+		json.NewEncoder(b).Encode(model.CreateExampleDto{
 			Title:       "Update test title",
 			Description: "Update test description"})
 		endpoint := fmt.Sprintf("%s/%s", endpoint, testId)
 		_, res, _ := request(rt, http.MethodPatch, endpoint, b)
 		assertEqual(t, res.Code, http.StatusOK)
 
-		var expected dto.ResponsePaginated[dto.CreateExampleDto]
+		var expected dto.ResponsePaginated[model.CreateExampleDto]
 		json.Unmarshal(res.Body.Bytes(), &expected)
 
 		for _, d := range *expected.Data {
@@ -75,7 +78,7 @@ func TestExampleCRUD(t *testing.T) {
 		_, res, _ := request(rt, http.MethodGet, endpoint, nil)
 		assertEqual(t, res.Code, http.StatusOK)
 
-		var body dto.ResponsePaginated[dto.ManyExampleResponseDto]
+		var body dto.ResponsePaginated[model.ManyExampleResponseDto]
 		json.Unmarshal(res.Body.Bytes(), &body)
 
 		for _, d := range *body.Data {
@@ -89,22 +92,22 @@ func TestExampleCRUD(t *testing.T) {
 		_, res, _ := request(rt, http.MethodGet, endpoint, nil)
 		assertEqual(t, res.Code, http.StatusOK)
 
-		var body dto.Response[dto.CreateExampleResponseDto]
+		var body dto.Response[model.Example]
 		json.Unmarshal(res.Body.Bytes(), &body)
 
 		assertEqual(t, body.Data.Id, testId)
 	})
 
-	// t.Run("DELETE '/{id}': should delete correct example by id", func(t *testing.T) {
-	// 	endpoint := fmt.Sprintf("%s/%s", ENDPOINT, testId)
-	// 	_, res, _ := request(rt, http.MethodDelete, endpoint, nil)
-	// 	assertEqual(t, res.Code, http.StatusOK)
-	//
-	// 	var body dto.Response[bool]
-	// 	json.Unmarshal(res.Body.Bytes(), &body)
-	//
-	// 	assertEqual(t, body.Data, true)
-	// })
+	t.Run("DELETE '/{id}': should delete correct example by id", func(t *testing.T) {
+		endpoint := fmt.Sprintf("%s/%s", endpoint, testId)
+		_, res, _ := request(rt, http.MethodDelete, endpoint, nil)
+		assertEqual(t, res.Code, http.StatusOK)
+
+		var body dto.Response[bool]
+		json.Unmarshal(res.Body.Bytes(), &body)
+
+		assertEqual(t, body.Data, true)
+	})
 }
 
 func assertEqual(t testing.TB, expected, got any) {

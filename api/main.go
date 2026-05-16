@@ -14,6 +14,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	err = infrastructure.EnvLoad(envfile)
 	if err != nil {
 		panic(err)

@@ -1,46 +1,60 @@
-##### ##### Test ##### #####
+API_PATH="./api"
+# Expected path relative to `./api`.
+MIGRATION_PATH="./infrastructure/migration-script/migrate.go"
+
+BUILD_MIGRATION="go-example-migration"
+BUILD_DEV="go-example-dev"
+BUILD_PROD="go-example-prod"
+BUILD_PATH="bin"
+
+# ===== ===== Test  ===== ===== #
 .PHONY: test
 test:
-	@cd ./api && \
-	go test -env=test -v ./... && \
+	@cd ${API_PATH} && \
+	ENV=test go test -v ./... && \
 	cd ..
 
-##### ##### Database ##### #####
+# ===== ===== Database ===== ===== #
 .PHONY: db-build-migration
-build-migration:
-	@cd ./api && \
-	go build -o ../bin/go-example-migration ./infrastructure/migration-script/migrate.go && \
+db-build-migration:
+	@cd ${API_PATH} && \
+	go build -o ../${BUILD_PATH}/${BUILD_MIGRATION} ${MIGRATION_PATH} && \
 	cd ..
-.PHONY: db-run-migration
-run-migration: build-migration
-	@cd ./api && \
-	./bin/go-example-migration -env=development && \
-	cd ..
-.PHONY: docker-run-dev
-docker-run-dev:
-	@docker-compose -f ./docker/dev/docker-compose.yml up -d
 
-##### ##### Development ##### #####
+.PHONY: db-run-migration
+db-run-migration: db-build-migration
+	@cd ${API_PATH} && \
+	ENV=development ../${BUILD_PATH}/${BUILD_MIGRATION} && \
+	cd ..
+
+# ===== ===== Development ===== ===== #
 .PHONY: build-dev
 build-dev:
-	@cd ./api && \
-	go build -o ../bin/go-example-dev ./main.go && \
+	@cd ${API_PATH} && \
+	go build -o ../${BUILD_PATH}/${BUILD_DEV} ./main.go && \
 	cd ..
+
 .PHONY: run-dev
 run-dev: build-dev
-	@cd ./api && \
-	../bin/go-example-dev -env=development && \
+	@cd ${API_PATH} && \
+	ENV=development ../${BUILD_PATH}/${BUILD_DEV} && \
 	cd ..
+
 .PHONY: watch-dev
 watch-dev:
 	bash ./script/watch-dir.sh "./api" "make run-dev" 3000
 
-##### ##### Production ##### #####
+.PHONY: docker-run-dev
+docker-run-dev:
+	@docker-compose -f ./docker/dev/docker-compose.yml up -d
+
+# ===== ===== Production ===== ===== #
 .PHONY: build-prod
 build-prod:
-	@cd ./api && \
-	go build -tags=production -o ./bin/go-example-prod ./main.go && \
+	@cd ${API_PATH} && \
+	go build -tags=production -o ../${BUILD_PATH}/${BUILD_PROD} ./main.go && \
 	cd ..
+
 .PHONY: run-prod
 run-prod: build-prod
-	@./bin/go-example-prod -env=production
+	@ENV=production ../${BUILD_PATH}/${BUILD_PROD}

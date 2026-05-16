@@ -1,28 +1,35 @@
 package example
 
 import (
-	"github.com/maronfranc/poc-golang-ddd/domain/dto"
 	"github.com/maronfranc/poc-golang-ddd/infrastructure/database"
+	"github.com/maronfranc/poc-golang-ddd/infrastructure/model"
 )
 
 type Repository struct{}
 
+func NewRepository() *Repository {
+	return &Repository{}
+}
+
 const TABLE_NAME = "examples"
 
-func (er *Repository) GetMany(page, limit int) (*[]dto.ManyExampleResponseDto, int) {
-	r, total, _ := database.SelectManyAndCount[dto.ManyExampleResponseDto](
+func (er *Repository) GetMany(page, limit int) (*[]model.ManyExampleResponseDto, int) {
+	r, total, _ := database.SelectManyAndCount[model.ManyExampleResponseDto](
 		TABLE_NAME, page, limit)
 	return &r, *total
 }
-func (er *Repository) GetById(id string) (*dto.CreateExampleResponseDto, error) {
-	return database.SelectById[dto.CreateExampleResponseDto](TABLE_NAME, id)
+
+func (er *Repository) GetById(id string) (*model.Example, error) {
+	return database.SelectById[model.Example](TABLE_NAME, id)
 }
-func (er *Repository) Create(e *dto.CreateExampleDto) (*dto.CreateExampleResponseDto, error) {
+
+func (er *Repository) Create(e *model.CreateExampleDto) (*model.Example, error) {
 	id, err := database.InsertReturningId(TABLE_NAME, e)
 	if err != nil {
 		return nil, err
 	}
-	r := &dto.CreateExampleResponseDto{
+
+	r := &model.Example{
 		Id:          id,
 		Title:       e.Title,
 		Description: e.Description,
@@ -30,7 +37,7 @@ func (er *Repository) Create(e *dto.CreateExampleDto) (*dto.CreateExampleRespons
 	return r, nil
 }
 
-func (er *Repository) UpdateById(id string, e *dto.CreateExampleDto) error {
+func (er *Repository) UpdateById(id string, e *model.CreateExampleDto) error {
 	err := database.UpdateById(TABLE_NAME, id, e, []string{})
 	return err
 }

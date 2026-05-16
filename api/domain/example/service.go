@@ -1,29 +1,33 @@
 package example
 
 import (
-	"github.com/maronfranc/poc-golang-ddd/domain/dto"
+	"github.com/maronfranc/poc-golang-ddd/infrastructure/model"
 )
 
-var exampleRepository = Repository{}
-
-type Service struct{}
-
-func (es *Service) GetMany(page, limit int) (*[]dto.ManyExampleResponseDto, int) {
-	return exampleRepository.GetMany(page, limit)
+type Service struct {
+	ExampleRepository *Repository
 }
 
-func (es *Service) GetById(id string) (*dto.CreateExampleResponseDto, error) {
-	return exampleRepository.GetById(id)
+func NewService(exampleRepository *Repository) *Service {
+	return &Service{ExampleRepository: exampleRepository}
 }
 
-func (es *Service) Create(e *dto.CreateExampleDto) (*dto.CreateExampleResponseDto, error) {
-	return exampleRepository.Create(e)
+func (es *Service) GetMany(page, limit int) (*[]model.ManyExampleResponseDto, int) {
+	return es.ExampleRepository.GetMany(page, limit)
 }
 
-func (es *Service) UpdateById(id string, e *dto.CreateExampleDto) error {
-	return exampleRepository.UpdateById(id, e)
+func (es *Service) GetById(id string) (*model.Example, error) {
+	return es.ExampleRepository.GetById(id)
+}
+
+func (es *Service) Create(e *model.CreateExampleDto) (*model.Example, error) {
+	return es.ExampleRepository.Create(e)
+}
+
+func (es *Service) UpdateById(id string, e *model.CreateExampleDto) error {
+	return es.ExampleRepository.UpdateById(id, e)
 }
 
 func (es *Service) DeleteById(id string) error {
-	return exampleRepository.DeleteById(id)
+	return es.ExampleRepository.DeleteById(id)
 }
