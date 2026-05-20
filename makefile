@@ -24,7 +24,13 @@ db-build-migration:
 .PHONY: db-run-migration
 db-run-migration: db-build-migration
 	@cd ${API_PATH} && \
-	ENV=development ../${BUILD_PATH}/${BUILD_MIGRATION} && \
+	ENV=development ../${BUILD_PATH}/${BUILD_MIGRATION} up && \
+	cd ..
+
+.PHONY: db-run-migration-down
+db-run-migration-down: db-build-migration
+	@cd ${API_PATH} && \
+	ENV=development ../${BUILD_PATH}/${BUILD_MIGRATION} down && \
 	cd ..
 
 # ===== ===== Development ===== ===== #
