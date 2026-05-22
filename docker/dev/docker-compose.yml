@@ -1,14 +1,18 @@
-version: '3.9'
+networks:
+  backend:
+    name: my-postgres-network
 
 services:
-  db-postgres:
-    container_name: db-postgres-container
+  my-postgres-service:
+    container_name: my-postgres-container
+    # SEE version: https://hub.docker.com/_/postgres/
+    image: postgres:18.1-alpine3.23
     networks: [backend]
-    image: postgres:16.3-alpine3.20
-    ports: [5432:5432]
+    ports: ["5432:5432"]
     volumes:
       - ./container-data/postgres:/data/postgres
-      - ./sql/:/docker-entrypoint-initdb.d/
+      # NOTE: this migration runs only once on container creation.
+      - ./initial-migration/:/docker-entrypoint-initdb.d/
     env_file: [./.postgres.env]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
@@ -17,6 +21,3 @@ services:
       retries: 3
       start_period: 5s
 
-networks:
-  backend:
-    name: golang-api-network
