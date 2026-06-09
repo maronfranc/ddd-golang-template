@@ -48,7 +48,7 @@ run-dev: build-dev
 
 .PHONY: watch-dev
 watch-dev:
-	bash ./script/watch-dir.sh "./api" "make run-dev" 3000
+	bash ./script/watch-dir.sh ${API_PATH} "make run-dev" 3000
 
 .PHONY: docker-run-dev
 docker-run-dev:

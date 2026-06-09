@@ -1,19 +1,22 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/maronfranc/poc-golang-ddd/infrastructure"
 	"github.com/maronfranc/poc-golang-ddd/infrastructure/database"
 )
 
+//go:embed sql/*
+var migrationFiles embed.FS
+
 var (
 	migration_table_name = "pg_migrations"
-	migration_sql_dir    = "./infrastructure/migration-script/sql"
+	migration_sql_dir    = "sql"
 	file_up_pattern      = ".up."
 	file_down_pattern    = ".down."
 )
@@ -42,11 +45,8 @@ func createMigrationTableIfNotExists() error {
 	// Check if migration table exists, create if not.
 	tableCheckStmt := fmt.Sprintf(`
 		SELECT EXISTS (
-			SELECT FROM 
-				information_schema.tables 
-			WHERE 
-				table_schema = 'public' AND 
-				table_name = '%s'
+			SELECT FROM information_schema.tables 
+			WHERE table_schema = 'public' AND table_name = '%s'
 		)`, migration_table_name)
 	var tableExists bool
 	err := database.DbConn.Get(&tableExists, tableCheckStmt)
@@ -91,11 +91,11 @@ func runMigration() error {
 	}
 
 	// Get all migration files.
-	dir_entries, err := os.ReadDir(migration_sql_dir)
+	entries, err := migrationFiles.ReadDir(migration_sql_dir)
 	if err != nil {
 		return err
 	}
-	if len(dir_entries) == 0 {
+	if len(entries) == 0 {
 		return fmt.Errorf("No migration files found in %s.", migration_sql_dir)
 	}
 
@@ -104,8 +104,8 @@ func runMigration() error {
 		return err
 	}
 
-	// Process each migration file
-	for _, entry := range dir_entries {
+	// Process each migration file.
+	for _, entry := range entries {
 		file_id := strings.Split(entry.Name(), ".")[0]
 
 		is_already_migrated := file_id <= recent_file_id
@@ -119,8 +119,9 @@ func runMigration() error {
 
 		log.Printf("• file_id: %s", file_id)
 
+		// Read from embedded filesystem.
 		file_path := fmt.Sprintf("%s/%s", migration_sql_dir, entry.Name())
-		buf, err := os.ReadFile(file_path)
+		buf, err := migrationFiles.ReadFile(file_path)
 		if err != nil {
 			return err
 		}
@@ -177,22 +178,28 @@ func runDownMigration() error {
 
 	log.Printf("Rolling back migration with id: `%s`", recent_file_id)
 
-	file_path_pattern := fmt.Sprintf(
-		"%s/%s%s*.sql",
-		migration_sql_dir,
-		recent_file_id,
-		file_down_pattern,
-	)
-	// Find file matching the pattern.
-	files, err := filepath.Glob(file_path_pattern)
+	// Look for files that match the pattern with the recent_file_id.
+	entries, err := migrationFiles.ReadDir(migration_sql_dir)
 	if err != nil {
 		return err
 	}
-	if len(files) == 0 {
-		return fmt.Errorf("no file found matching pattern: %s", file_path_pattern)
+
+	var downFilePath string
+	for _, entry := range entries {
+		if strings.Contains(entry.Name(), recent_file_id) &&
+			strings.Contains(entry.Name(), file_down_pattern) &&
+			strings.HasSuffix(entry.Name(), ".sql") {
+			downFilePath = fmt.Sprintf("%s/%s", migration_sql_dir, entry.Name())
+			break
+		}
 	}
-	found_file := files[0]
-	buf, err := os.ReadFile(found_file)
+
+	if downFilePath == "" {
+		return fmt.Errorf("no down migration file found for id: %s", recent_file_id)
+	}
+
+	// Read from embedded filesystem.
+	buf, err := migrationFiles.ReadFile(downFilePath)
 	if err != nil {
 		return err
 	}
@@ -202,7 +209,7 @@ func runDownMigration() error {
 		return err
 	}
 
-	// Execute the down SQL (assuming it's in the same file).
+	// Execute the down SQL.
 	sql_file_content := string(buf)
 	_, err = tx.Exec(sql_file_content)
 	if err != nil {
